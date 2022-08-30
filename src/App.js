@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Modal, Alert, Text } from 'react-native-web';
 import SocketIOClient from 'socket.io-client';
 const { RTCPeerConnection, RTCSessionDescription } = window;
-let socket = SocketIOClient.connect("http://192.168.43.164", { transports: ["websocket"] })
+// let socket = SocketIOClient.connect("http://192.168.43.164", { transports: ["websocket"] })
+let socket = SocketIOClient.connect("https://myhost3000310webrtc.ir", { transports: ["websocket"] })
 
 
 let pcs = {},
@@ -90,7 +91,7 @@ const App = () => {
         let offer = await pcs[socketId].createOffer()
         pcs[socketId].setLocalDescription(offer);
         socket.emit('offer2', offer, socketId)
-        pcs[socketId].onicecandidate = ({ candidate }) => { candidate && socket.emit('candidate', { sdpMLineIndex: candidate.sdpMLineIndex, candidate: candidate.candidate }, room) };
+        pcs[socketId].onicecandidate = ({ candidate }) => { candidate && socket.emit('candidate', candidate, room) };
       }
     })
 
@@ -103,6 +104,7 @@ const App = () => {
         let answer = await pcs[socketId].createAnswer()
         pcs[socketId].setLocalDescription(answer);
         socket.emit('answer', answer, socketId)
+        // pcs[socketId].onicecandidate = ({ candidate }) => { candidate && socket.emit('candidate', candidate, roomId) };
       }
     })
 
