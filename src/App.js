@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Modal, Alert, Text } from 'react-native-web';
 import SocketIOClient from 'socket.io-client';
-const { RTCPeerConnection, RTCSessionDescription } = window;
+import { RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, mediaDevices, RTCView } from './Webrtc';
+// const { RTCPeerConnection, RTCSessionDescription } = window;
 // let socket = SocketIOClient.connect("http://192.168.43.164", { transports: ["websocket"] })
 let socket = SocketIOClient.connect("https://myhost3000310webrtc.ir", { transports: ["websocket"] })
 
@@ -36,7 +37,7 @@ const App = () => {
       setadmin(roomAdminId)
     })
 
-    if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
+    if (mediaDevices) mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
       localRef = stream
       setuser(user => user.concat({ id: 1, stream }))
     })
@@ -78,12 +79,14 @@ const App = () => {
       allId.forEach((socketId) => {
         if (!pcs[socketId]) {
           pcs[socketId] = new RTCPeerConnection();
-          pcs[socketId].ontrack = (event) => {
-            if (streams[socketId]?.id !== event.streams[0].id) {
-              streams[socketId] = event.streams[0];
-              setuser(user => user.concat({ id: socketId, stream: event.streams[0] }))
+
+          pcs[socketId].onaddstream = ({stream}) => {
+            if (streams[socketId]?.id !== stream.id) {
+              streams[socketId] = stream;
+              setuser(user => user.concat({ id: socketId, stream: stream }))
             }
           }
+
           localRef && pcs[socketId].addStream(localRef);
         }
       })
@@ -193,7 +196,7 @@ const App = () => {
       <View style={{ height: '100%', width: '70%' }} >
 
         {admin.map((adminId, i) => (
-         admin && isAdmin.room != adminId.room && !startRoom && <h6 key={i} onClick={() => { socket.emit('permission', adminId.room, adminId.id) }} >{adminId.id}</h6>
+          admin && isAdmin.room != adminId.room && !startRoom && <h6 key={i} onClick={() => { socket.emit('permission', adminId.room, adminId.id) }} >{adminId.id}</h6>
         ))}
 
         <View style={{ height: 28, width: '40%', flexDirection: 'row' }} >
@@ -205,7 +208,7 @@ const App = () => {
         <View style={{ flex: 1, width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }} >
           {user.map((user, i) => (
             <View key={i} style={[{ flexGrow: 1, backgroundColor: 'silver', borderWidth: '.1%' }, stl]}>
-              {user.stream && <video ref={(e) => { if (e) e.srcObject = user.stream }} autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+              {user.stream && <RTCView streamURL={user.stream} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               {isAdmin?.room == roomId && user.id != 1 && <button onClick={() => liveBtn(user.id)} style={{ position: "absolute", bottom: 2 }} >click</button>}
             </View>
           ))}
